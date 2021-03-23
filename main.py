@@ -9,13 +9,15 @@ import threading
 import telebot
 from emoji import emojize
 from telebot import types
-from .data.users import User
-from .data import db_session
+from data.users import User
+from data import db_session
 import time
 
 db_session.global_init("db/users.sqlite")
 history = True
 bot = telebot.TeleBot(open("static/token.txt", mode="r", encoding="utf-8").read())
+count = 0
+sek = 0
 
 
 def tconv(x):
@@ -136,11 +138,11 @@ def request_to_yaklass(tg_id):
         text = r.text
         soup = BeautifulSoup(text, features="lxml")
         table = soup.find_all('tr', {'class': 'statusUnchecked'})
-        count = 0
+        countt = 0
         _len = 0
         jobs = []
         for work in table:
-            if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
+            if work.find('td', {'class': "status left"}).get('title') != 'Закончена' or 1:
                 dates = work.find_all('input', {'class': 'utc-date-time'})
                 time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')))
                 time2 = datetime.datetime.now()
@@ -148,10 +150,11 @@ def request_to_yaklass(tg_id):
                              'href': work.find("a").get("href"),
                              'time': str(time1 - time2)})
             else:
-                count += 1
+                countt += 1
             _len += 1
-        if _len == count:
-            return "К радости у вас нет работ"
+        if _len == countt:
+            # return "К радости у вас нет работ"
+            return jobs
         else:
             return jobs
     except Exception as er:
@@ -160,7 +163,9 @@ def request_to_yaklass(tg_id):
 
 
 def test():
-    print('rabaet')
+    global sek
+    sek += 1
+    print(sek * 5)
 
 
 def start_chek():
@@ -192,13 +197,13 @@ def main():
     x.start()
 
 
-@bot.message_handler(commands=["/help"])
+@bot.message_handler(commands=["help"])
 def help_bot(message):
     session = db_session.create_session()
     user = session.query(User).filter(User.tg_id == message.from_user.id).first()
 
 
-@bot.message_handler(commands=["/start"])
+@bot.message_handler(commands=["start"])
 def start(message):
     session = db_session.create_session()
     user = session.query(User).filter(User.tg_id == message.from_user.id).first()
@@ -209,7 +214,7 @@ def start(message):
             user.place = 'login'
             session.commit()
             return bot.send_message(message.from_user.id,
-                                    f"Привет, это бот создан для напоминания о работах на Яклассе."
+                                    f"Привет, этот бот создан для напоминания о работах на Яклассе."
                                     f"Но для этого нам нужен логин и пароль от вашего Якласса."
                                     f"Если вы согласны, то введите логин:")
     except Exception:
@@ -221,7 +226,7 @@ def start(message):
         user.place = 'login'
         session.add(user)
         session.commit()
-    bot.send_message(message.from_user.id, f"Привет, это бот создан для напоминания о работах на Яклассе."
+    bot.send_message(message.from_user.id, f"Привет, этот бот создан для напоминания о работах на Яклассе."
                                            f"Но для этого нам нужен логин и пароль от вашего Якласса."
                                            f"Если вы согласны, то введите логин:")
 
@@ -231,7 +236,7 @@ def hz(message):
     session = db_session.create_session()
     user = session.query(User).filter(User.tg_id == message.from_user.id).first()
     if user.place == 'login':
-        user.login = message.text
+        user.login = message.text.lower()
         bot.send_message(message.from_user.id, f"Хорошо, теперь введите пароль:")
         user.place = 'password'
         session.commit()
@@ -248,7 +253,15 @@ def hz(message):
             user.place = 'menu'
             bot.send_message(message.from_user.id, f"К радости у вас нет работ.")
         elif type(answer) is list:
-            pass
+            text = [f"К сожалению у вас есть работы:", ""]
+            for i in answer:
+                text.append(f"Название: {i['name']}")
+                text.append(f"Оставшееся время: {i['time']}")
+                text.append(f"Ссылка: {i['href']}")
+                text.append("")
+            text = text[: -1]
+            print(text)
+            bot.send_message(message.from_user.id, "\n".join(text), reply_markup=buttons_creator({"1": {"Обновить": "update"}}))
         session.commit()
 
 
