@@ -141,6 +141,7 @@ def request_to_yaklass(tg_id):
         countt = 0
         _len = 0
         jobs = []
+        print(table, user.password, user.login)
         for work in table:
             if work.find('td', {'class': "status left"}).get('title') != 'Закончена' or 1:
                 dates = work.find_all('input', {'class': 'utc-date-time'})
@@ -154,6 +155,8 @@ def request_to_yaklass(tg_id):
             _len += 1
         if _len == countt:
             # return "К радости у вас нет работ"
+            if _len == 0 and countt == 0:
+                assert 1 / 0
             return jobs
         else:
             return jobs
@@ -233,17 +236,18 @@ def start(message):
 
 @bot.message_handler(content_types=['text'])
 def hz(message):
-    session = db_session.create_session()
-    user = session.query(User).filter(User.tg_id == message.from_user.id).first()
+    sessionn = db_session.create_session()
+    user = sessionn.query(User).filter(User.tg_id == message.from_user.id).first()
     if user.place == 'login':
-        user.login = message.text.lower()
+        user.login = message.text
         bot.send_message(message.from_user.id, f"Хорошо, теперь введите пароль:")
         user.place = 'password'
-        session.commit()
+        sessionn.commit()
     elif user.place == 'password':
         user.password = message.text
         bot.send_message(message.from_user.id, f"Хорошо, теперь проверим, подождите чуть-чуть......")
         user.place = 'login'
+        sessionn.commit()
         answer = request_to_yaklass(message.from_user.id)
         if answer == 'К сожалению вы ввели неправильный логин или пароль, давайте попробуеб ещё, введите логин:':
             user.place = 'login'
@@ -261,8 +265,9 @@ def hz(message):
                 text.append("")
             text = text[: -1]
             print(text)
-            bot.send_message(message.from_user.id, "\n".join(text), reply_markup=buttons_creator({"1": {"Обновить": "update"}}))
-        session.commit()
+            bot.send_message(message.from_user.id, "\n".join(text),
+                             reply_markup=buttons_creator({"1": {"Обновить": "update"}}))
+        sessionn.commit()
 
 
 if __name__ == '__main__':
