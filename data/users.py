@@ -12,4 +12,5 @@ class User(SqlAlchemyBase, UserMixin):
     login = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     place = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    last_time = sqlalchemy.Column(sqlalchemy.Integer, nullable=True)
     count = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=0)
