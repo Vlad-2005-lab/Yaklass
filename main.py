@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import datetime
 import requests
 from bs4 import BeautifulSoup
 import datetime
@@ -9,7 +8,7 @@ import threading
 import telebot
 from emoji import emojize
 from telebot import types
-from telebot.types import ReplyKeyboardRemove
+from telebot.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 
 from data.users import User
 from data import db_session
@@ -24,6 +23,10 @@ count = 0
 
 def tconv(x):
     return time.strftime("%H:%M:%S %d.%m.%Y", time.localtime(x))
+
+
+def tranclate(string):
+    return str(string).replace("year", "год").replace("years", "лет").replace("month", "месяц").replace("months", "год")
 
 
 def log(message=None, where='ne napisal', full=False, comments="None"):
@@ -159,32 +162,54 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
         r = session.get(url, headers={
             'User-Agent': user_agent_val
         })
-        with open("ysklass.html", "w", encoding="utf-8") as f:
-            for string in r.text.split("\n"):
-                f.writelines(string)
+        # with open("ysklass.html", "w", encoding="utf-8") as f:
+        #     for string in r.text.split("\n"):
+        #         f.writelines(string)
         text = r.text
         soup = BeautifulSoup(text, features="lxml")
         table = soup.find_all('tr', {'class': 'statusUnchecked'})
+        table1 = soup.find_all('tr', {'class': 'statusRunning'})
         countt = 0
         _len = 0
         jobs = []
         for work in table:
-            if work.find('td', {'class': "status left"}).get('title') != 'Закончена' or 1:
+            if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
                 dates = work.find_all('input', {'class': 'utc-date-time'})
                 time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')))
                 time2 = datetime.datetime.now()
                 jobs.append({'name': work.find('a').text,
                              'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
-                             'time': str(time1 - time2)})
+                             'time': ", ".join((lambda x: [x.split(", ")[0],
+                                                           f"{x.split(', ')[1].split(':')[0]} hours",
+                                                           f"{x.split(', ')[1].split(':')[1]} minutes",
+                                                           f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
+                                                )(str(time1 - time2))),
+                             'time(d)': time1})
+            else:
+                countt += 1
+            _len += 1
+        for work in table1:
+            if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
+                dates = work.find_all('input', {'class': 'utc-date-time'})
+                time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')))
+                time2 = datetime.datetime.now()
+                jobs.append({'name': work.find('a').text,
+                             'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
+                             'time': ", ".join((lambda x: [x.split(", ")[0],
+                                                           f"{x.split(', ')[1].split(':')[0]} hours",
+                                                           f"{x.split(', ')[1].split(':')[1]} minutes",
+                                                           f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
+                                                )(str(time1 - time2))),
+                             'time(d)': time1})
             else:
                 countt += 1
             _len += 1
         if _len == countt:
-            # return "К радости у вас нет работ"
             if _len == 0 and countt == 0:
                 return Text.return_text_jaklass
             return jobs
         else:
+            jobs.sort(key=lambda x: x["time"])
             return jobs
     except Exception as er:
         log(message=None, where="request_to_yaklass", comments=str(er))
@@ -214,18 +239,21 @@ def start(message):
             elif type(answer) is list:
                 text = [f"К сожалению у вас есть работы:", ""]
                 # text = [f"{NADO_YDALIT}", f"К сожалению у вас есть работы:", ""]
+                k = InlineKeyboardMarkup(row_width=1)
                 for i in answer:
                     text.append(f"Название: {i['name']}")
                     text.append(f"Оставшееся время: {i['time']}")
                     text.append(f"Ссылка: {i['href']}")
                     text.append("")
+                    k.add(InlineKeyboardButton(i['name'], url=i['href']))
                 text = text[: -1]
+                k.add(InlineKeyboardButton('Обновить', callback_data="update"))
                 return bot.send_message(message.from_user.id, "\n".join(text),
-                                        reply_markup=buttons_creator({"1": {"Обновить": "update"}}))
+                                        reply_markup=k)
         else:
             user.place = 'login'
             session.commit()
-            return bot.send_message(message.from_user.id, Text.start)
+            return bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
     except Exception:
         user = User()
         user.tg_id = message.from_user.id
@@ -236,7 +264,37 @@ def start(message):
         user.last_time = datetime.datetime.now().timestamp()
         session.add(user)
         session.commit()
-    bot.send_message(message.from_user.id, Text.start)
+    bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
+
+
+def send_answer_yaklass(tg_id):
+    sessionn = db_session.create_session()
+    user = sessionn.query(User).filter(User.tg_id == tg_id).first()
+    answer = request_to_yaklass(tg_id)
+    if answer == Text.return_text_jaklass:
+        user.place = 'menu'
+        # text = [f"{NADO_YDALIT}", f"К радости у вас нет работ."]
+        text = [Text.return_text_jaklass]
+        bot.send_message(tg_id, "\n".join(text),
+                         reply_markup=buttons_creator(Buttons.update))
+        bot.send_message(tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu)
+                         )
+    elif type(answer) is list:
+        text = [Text.bad_news, ""]
+        user.place = 'menu'
+        k = InlineKeyboardMarkup(row_width=1)
+        # text = [f"{NADO_YDALIT}", f"К сожалению у вас есть работы:", ""]
+        for i in answer:
+            text.append(f"Название: {i['name']}")
+            text.append(f"Оставшееся время: {i['time']}")
+            text.append(f"Ссылка: {i['href']}")
+            k.add(InlineKeyboardButton(i['name'], url=i['href']))
+            text.append("")
+        text = text[: -1]
+        k.add(InlineKeyboardButton('Обновить', callback_data="update"))
+        bot.send_message(tg_id, "\n".join(text),
+                         reply_markup=k)
+        bot.send_message(tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
 
 
 @bot.message_handler(content_types=['text'])
@@ -269,14 +327,17 @@ def hz(message):
             text = [Text.bad_news, ""]
             user.place = 'menu'
             # text = [f"{NADO_YDALIT}", f"К сожалению у вас есть работы:", ""]
+            k = InlineKeyboardMarkup(row_width=1)
             for i in answer:
                 text.append(f"Название: {i['name']}")
                 text.append(f"Оставшееся время: {i['time']}")
                 text.append(f"Ссылка: {i['href']}")
                 text.append("")
+                k.add(InlineKeyboardButton(i['name'], url=i['href']))
             text = text[: -1]
+            k.add(InlineKeyboardButton('Обновить', callback_data="update"))
             bot.send_message(message.from_user.id, "\n".join(text),
-                             reply_markup=buttons_creator(Buttons.update))
+                             reply_markup=k)
             bot.send_message(message.from_user.id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
         user.last_time = int(datetime.datetime.now().timestamp())
         sessionn.commit()
@@ -286,29 +347,7 @@ def hz(message):
             sessionn.commit()
             return bot.send_message(message.from_user.id, Text.login, reply_markup=ReplyKeyboardRemove())
         elif message.text == Keyboard.main_menu[0][1]:
-            answer = request_to_yaklass(message.from_user.id)
-            if answer == Text.return_text_jaklass:
-                user.place = 'menu'
-                # text = [f"{NADO_YDALIT}", f"К радости у вас нет работ."]
-                text = [Text.return_text_jaklass]
-                bot.send_message(message.from_user.id, "\n".join(text),
-                                 reply_markup=buttons_creator(Buttons.update))
-                bot.send_message(message.from_user.id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu)
-                                 )
-            elif type(answer) is list:
-                text = [Text.bad_news, ""]
-                user.place = 'menu'
-                # text = [f"{NADO_YDALIT}", f"К сожалению у вас есть работы:", ""]
-                for i in answer:
-                    text.append(f"Название: {i['name']}")
-                    text.append(f"Оставшееся время: {i['time']}")
-                    text.append(f"Ссылка: {i['href']}")
-                    text.append("")
-                text = text[: -1]
-                bot.send_message(message.from_user.id, "\n".join(text),
-                                 reply_markup=buttons_creator(Buttons.update))
-                bot.send_message(message.from_user.id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu)
-                                 )
+            send_answer_yaklass(message.from_user.id)
         else:
             bot.send_message(message.from_user.id, Text.error, reply_markup=ReplyKeyboardRemove())
             bot.send_message(message.from_user.id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
@@ -328,24 +367,81 @@ def callback_worker(call):
         elif type(answer) is list:
             text = [f"К сожалению у вас есть работы:", ""]
             # text = [f"{NADO_YDALIT}", f"К сожалению у вас есть работы:", ""]
+            k = InlineKeyboardMarkup(row_width=1)
             for i in answer:
                 text.append(f"Название: {i['name']}")
                 text.append(f"Оставшееся время: {i['time']}")
                 text.append(f"Ссылка: {i['href']}")
                 text.append("")
+                k.add(InlineKeyboardButton(i['name'], url=i['href']))
             text = text[: -1]
+            k.add(InlineKeyboardButton('Обновить', callback_data="update"))
             bot.edit_message_text("\n".join(text), call.message.chat.id, call.message.message_id,
-                                  reply_markup=buttons_creator({"1": {"Обновить": "update"}}))
+                                  reply_markup=k)
 
 
-def test():
-    db = db_session.create_session()
-    users = db.query(User).all()
-    print("\033[0m", datetime.datetime.now(), len(users))
+def update():
+    print("\033[0mdone")
+    try:
+        sessionn = db_session.create_session()
+        users = sessionn.query(User).all()
+        for user in users:
+            last_time = datetime.datetime.strptime(user.last_time, '%Y-%m-%d %H:%M:%S.%f')
+            answer = request_to_yaklass(user.tg_id)
+            if type(answer) is list:
+                text = [Text.bad_news, ""]
+                # user.place = 'menu'
+                min_time = answer[0]["time(d)"]
+                time_now = datetime.datetime.now()
+                k = InlineKeyboardMarkup(row_width=1)
+                if (min_time - time_now).days >= 1 and (time_now - last_time).days >= 1:
+                    for i in answer:
+                        text.append(f"Название: {i['name']}")
+                        text.append(f"Оставшееся время: {i['time']}")
+                        text.append(f"Ссылка: {i['href']}")
+                        text.append("")
+                        k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                    text = text[: -1]
+                    k.add(InlineKeyboardButton('Обновить', callback_data="update"))
+                    bot.send_message(user.tg_id, "\n".join(text),
+                                     reply_markup=k)
+                    bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
+                    user.last_time = time_now
+                    sessionn.commit()
+                elif (min_time - time_now).seconds >= 5 * 60 * 60 and (time_now - last_time).seconds >= 60 * 60:
+                    for i in answer:
+                        text.append(f"Название: {i['name']}")
+                        text.append(f"Оставшееся время: {i['time']}")
+                        text.append(f"Ссылка: {i['href']}")
+                        text.append("")
+                        k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                    text = text[: -1]
+                    k.add(InlineKeyboardButton('Обновить', callback_data="update"))
+                    bot.send_message(user.tg_id, "\n".join(text),
+                                     reply_markup=k)
+                    bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
+                    user.last_time = time_now
+                    sessionn.commit()
+                elif (min_time - time_now).seconds < 5 * 60 * 60 and (time_now - last_time).seconds >= 30 * 60:
+                    for i in answer:
+                        text.append(f"Название: {i['name']}")
+                        text.append(f"Оставшееся время: {i['time']}")
+                        text.append(f"Ссылка: {i['href']}")
+                        text.append("")
+                        k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                    text = text[: -1]
+                    k.add(InlineKeyboardButton('Обновить', callback_data="update"))
+                    bot.send_message(user.tg_id, "\n".join(text),
+                                     reply_markup=k)
+                    bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
+                    user.last_time = time_now
+                    sessionn.commit()
+    except Exception as er:
+        print("oshibka:", er)
 
 
 def start_chek():
-    schedule.every(30).seconds.do(test)
+    schedule.every().minute.do(update)
     while True:
         schedule.run_pending()
         time.sleep(1)
