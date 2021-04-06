@@ -9,20 +9,28 @@ import telebot
 from emoji import emojize
 from telebot import types
 from telebot.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
-
+import yadisk
 from data.users import User
 from data import db_session
 import time
 from static import *
 
-db_session.global_init("db/users.sqlite")
 history = True
 bot = telebot.TeleBot(open("static/token.txt", mode="r", encoding="utf-8").read())
+yandex_disk = yadisk.YaDisk(token=str(open("static/yandex_disk_token.txt", mode="r", encoding="utf-8").read()))
+yandex_disk.download("users.sqlite", "db/users.sqlite")
+db_session.global_init("db/users.sqlite")
 count = 0
 
 
 def tconv(x):
     return time.strftime("%H:%M:%S %d.%m.%Y", time.localtime(x))
+
+
+def update_yandex_disk():
+    if yandex_disk.exists("users.sqlite"):
+        yandex_disk.remove("users.sqlite")
+    yandex_disk.upload("db/users.sqlite", "users.sqlite")
 
 
 def tranclate(string):
@@ -341,6 +349,7 @@ def hz(message):
             bot.send_message(message.from_user.id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
         user.last_time = int(datetime.datetime.now().timestamp())
         sessionn.commit()
+        update_yandex_disk()
     elif user.place == 'menu':
         if message.text == Keyboard.main_menu[0][0]:
             user.place = 'login'
@@ -386,7 +395,10 @@ def update():
         sessionn = db_session.create_session()
         users = sessionn.query(User).all()
         for user in users:
-            last_time = datetime.datetime.strptime(user.last_time, '%Y-%m-%d %H:%M:%S.%f')
+            try:
+                last_time = datetime.datetime.strptime(str(user.last_time), '%Y-%m-%d %H:%M:%S.%f')
+            except Exception:
+                last_time = datetime.datetime.fromtimestamp(float(user.last_time))
             answer = request_to_yaklass(user.tg_id)
             if type(answer) is list:
                 text = [Text.bad_news, ""]
@@ -408,7 +420,8 @@ def update():
                     bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
                     user.last_time = time_now
                     sessionn.commit()
-                elif (min_time - time_now).seconds >= 5 * 60 * 60 and (time_now - last_time).seconds >= 60 * 60:
+                elif (min_time - time_now).days < 1 and (min_time - time_now).seconds >= 5 * 60 * 60 and (
+                        time_now - last_time).seconds >= 60 * 60:
                     for i in answer:
                         text.append(f"Название: {i['name']}")
                         text.append(f"Оставшееся время: {i['time']}")
@@ -422,7 +435,8 @@ def update():
                     bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
                     user.last_time = time_now
                     sessionn.commit()
-                elif (min_time - time_now).seconds < 5 * 60 * 60 and (time_now - last_time).seconds >= 30 * 60:
+                elif (min_time - time_now).seconds < 5 * 60 * 60 and (
+                        time_now - last_time).seconds >= 30 * 60:
                     for i in answer:
                         text.append(f"Название: {i['name']}")
                         text.append(f"Оставшееся время: {i['time']}")
