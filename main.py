@@ -481,8 +481,7 @@ def main():
     x.start()
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except Exception:
-        print('\033[35mОшибка, мы не смогли решить её.\033[0m')
+try:
+    main()
+except Exception:
+    print('\033[35mОшибка, мы не смогли решить её.\033[0m')
