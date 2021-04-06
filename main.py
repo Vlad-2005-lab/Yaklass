@@ -14,12 +14,14 @@ from data.users import User
 from data import db_session
 import time
 from static import *
+import pytz
 
 history = True
 bot = telebot.TeleBot(open("static/token.txt", mode="r", encoding="utf-8").read())
 yandex_disk = yadisk.YaDisk(token=str(open("static/yandex_disk_token.txt", mode="r", encoding="utf-8").read()))
 yandex_disk.download("users.sqlite", "db/users.sqlite")
 db_session.global_init("db/users.sqlite")
+timezones = ["Asia/Yekaterinburg"]
 count = 0
 
 
@@ -184,7 +186,9 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
             if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
                 dates = work.find_all('input', {'class': 'utc-date-time'})
                 time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')))
-                time2 = datetime.datetime.now()
+                utcmoment_naive = datetime.datetime.utcnow()
+                utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+                time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
                 jobs.append({'name': work.find('a').text,
                              'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
                              'time': ", ".join((lambda x: [x.split(", ")[0],
@@ -200,7 +204,9 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
             if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
                 dates = work.find_all('input', {'class': 'utc-date-time'})
                 time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')))
-                time2 = datetime.datetime.now()
+                utcmoment_naive = datetime.datetime.utcnow()
+                utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+                time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
                 jobs.append({'name': work.find('a').text,
                              'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
                              'time': ", ".join((lambda x: [x.split(", ")[0],
@@ -269,7 +275,10 @@ def start(message):
         user.login = ""
         user.password = ""
         user.place = 'login'
-        user.last_time = datetime.datetime.now().timestamp()
+        utcmoment_naive = datetime.datetime.utcnow()
+        utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+        time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
+        user.last_time = time2.timestamp()
         session.add(user)
         session.commit()
     bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
@@ -347,7 +356,10 @@ def hz(message):
             bot.send_message(message.from_user.id, "\n".join(text),
                              reply_markup=k)
             bot.send_message(message.from_user.id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
-        user.last_time = int(datetime.datetime.now().timestamp())
+        utcmoment_naive = datetime.datetime.utcnow()
+        utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+        time = utcmoment.astimezone(pytz.timezone(timezones[0]))
+        user.last_time = int(time.timestamp())
         sessionn.commit()
         update_yandex_disk()
     elif user.place == 'menu':
@@ -404,7 +416,9 @@ def update():
                 text = [Text.bad_news, ""]
                 # user.place = 'menu'
                 min_time = answer[0]["time(d)"]
-                time_now = datetime.datetime.now()
+                utcmoment_naive = datetime.datetime.utcnow()
+                utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+                time_now = utcmoment.astimezone(pytz.timezone(timezones[0]))
                 k = InlineKeyboardMarkup(row_width=1)
                 if (min_time - time_now).days >= 1 and (time_now - last_time).days >= 1:
                     for i in answer:
