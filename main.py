@@ -390,7 +390,7 @@ def callback_worker(call):
 
 
 def update():
-    print("\033[0mdone")
+    print(datetime.datetime.now())
     try:
         sessionn = db_session.create_session()
         users = sessionn.query(User).all()
