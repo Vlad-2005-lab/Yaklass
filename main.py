@@ -7,6 +7,7 @@ import schedule
 import threading
 import telebot
 from emoji import emojize
+from datetime import timezone
 from telebot import types
 from telebot.types import ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 import yadisk
@@ -185,7 +186,7 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
         for work in table:
             if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
                 dates = work.find_all('input', {'class': 'utc-date-time'})
-                time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')))
+                time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')), timezone.utc)
                 utcmoment_naive = datetime.datetime.utcnow()
                 utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
                 time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
@@ -203,7 +204,7 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
         for work in table1:
             if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
                 dates = work.find_all('input', {'class': 'utc-date-time'})
-                time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')))
+                time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')), timezone.utc)
                 utcmoment_naive = datetime.datetime.utcnow()
                 utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
                 time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
@@ -402,7 +403,7 @@ def callback_worker(call):
 
 
 def update():
-    print(datetime.datetime.now())
+    print(datetime.datetime.now(timezone.utc))
     try:
         sessionn = db_session.create_session()
         users = sessionn.query(User).all()
@@ -410,7 +411,7 @@ def update():
             try:
                 last_time = datetime.datetime.strptime(str(user.last_time), '%Y-%m-%d %H:%M:%S.%f')
             except Exception:
-                last_time = datetime.datetime.fromtimestamp(float(user.last_time))
+                last_time = datetime.datetime.fromtimestamp(float(user.last_time), timezone.utc)
             answer = request_to_yaklass(user.tg_id)
             if type(answer) is list:
                 text = [Text.bad_news, ""]
