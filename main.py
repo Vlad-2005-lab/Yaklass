@@ -16,6 +16,7 @@ from data import db_session
 import time
 from static import *
 import pytz
+import random
 
 history = True
 bot = telebot.TeleBot(open("static/token.txt", mode="r", encoding="utf-8").read())
@@ -24,6 +25,47 @@ yandex_disk.download("users.sqlite", "db/users.sqlite")
 db_session.global_init("db/users.sqlite")
 timezones = ["Asia/Yekaterinburg"]
 count = 0
+
+
+def myincode(text):
+    """
+    text - your text
+    function return str
+    """
+    string = str(text)
+    answer = []
+    sdvig = random.choice([i for i in range(101, 10000)]) ** 3 + 2147483647
+    sdvig2 = random.choice([i for i in range(len(string))])
+    for i in string:
+        answer.append(f"{sdvig2}{ord(i) + sdvig}")
+    answer.insert(sdvig2, f"{sdvig2}{sdvig}")
+    ta = "0x".join([str(i) for i in answer])
+    return ta
+
+
+def mydecode(text):
+    """
+    !!!this funstion for text after function "mycode"!!!
+    funcrion return str
+    """
+    ta = str(text)
+    answer = []
+    data = ta.split("0x")
+    count = 0
+    a = len(data)
+    while a > 0:
+        count += 1
+        a //= 10
+    idd = int(data[0][: count])
+    while idd >= len(data):
+        idd //= 10
+    s = int(data[idd][count:])
+    data.pop(idd)
+    for i in data:
+        i = i[count:]
+        answer.append(chr(int(i) - s))
+    answer = "".join([str(i) for i in answer])
+    return answer
 
 
 def tconv(x):
@@ -165,8 +207,8 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
         _xsrf = session.cookies.get('_xsrf', domain="yaklass.ru")
         session.post(url, {
             'backUrl': 'https://www.yaklass.ru/Account/Login',
-            'username': user.login,
-            'password': user.password,
+            'username': mydecode(user.login),
+            'password': mydecode(user.password),
             '_xsrf': _xsrf,
             'remember': 'yes'
         })
@@ -342,12 +384,12 @@ def hz(message):
     sessionn = db_session.create_session()
     user = sessionn.query(User).filter(User.tg_id == message.from_user.id).first()
     if user.place == 'login':
-        user.login = message.text
+        user.login = myincode(message.text)
         bot.send_message(message.from_user.id, Text.enter_password, reply_markup=ReplyKeyboardRemove())
         user.place = 'password'
         sessionn.commit()
     elif user.place == 'password':
-        user.password = message.text
+        user.password = myincode(message.text)
         bot.send_message(message.from_user.id, Text.chek)
         user.place = 'login'
         sessionn.commit()
