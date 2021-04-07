@@ -21,7 +21,10 @@ import random
 history = True
 bot = telebot.TeleBot(open("static/token.txt", mode="r", encoding="utf-8").read())
 yandex_disk = yadisk.YaDisk(token=str(open("static/yandex_disk_token.txt", mode="r", encoding="utf-8").read()))
-yandex_disk.download("users.sqlite", "db/users.sqlite")
+try:
+    yandex_disk.download("users.sqlite", "db/users.sqlite")
+except Exception:
+    yandex_disk.upload("db/users.sqlite", "users.sqlite")
 db_session.global_init("db/users.sqlite")
 timezones = ["Asia/Yekaterinburg"]
 count = 0
@@ -385,11 +388,15 @@ def hz(message):
     user = sessionn.query(User).filter(User.tg_id == message.from_user.id).first()
     if user.place == 'login':
         user.login = myincode(message.text)
+        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(message.chat.id, message.message_id - 1)
         bot.send_message(message.from_user.id, Text.enter_password, reply_markup=ReplyKeyboardRemove())
         user.place = 'password'
         sessionn.commit()
     elif user.place == 'password':
         user.password = myincode(message.text)
+        bot.delete_message(message.chat.id, message.message_id)
+        bot.delete_message(message.chat.id, message.message_id - 1)
         bot.send_message(message.from_user.id, Text.chek)
         user.place = 'login'
         sessionn.commit()
