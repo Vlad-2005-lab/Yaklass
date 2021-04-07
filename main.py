@@ -327,7 +327,8 @@ def send_answer_yaklass(tg_id):
             text.append(f"Название: {i['name']}")
             text.append(f"Оставшееся время: {i['time']}")
             text.append(f"Ссылка: {i['href']}")
-            k.add(InlineKeyboardButton(i['name'], url=i['href']))
+            k.add(
+                InlineKeyboardButton(i['name'] if len(i['name']) <= 30 else i['name'][: 30] + "...", url=i['href']))
             text.append("")
         text = text[: -1]
         k.add(InlineKeyboardButton('Обновить', callback_data="update"))
@@ -372,7 +373,8 @@ def hz(message):
                 text.append(f"Оставшееся время: {i['time']}")
                 text.append(f"Ссылка: {i['href']}")
                 text.append("")
-                k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                k.add(
+                    InlineKeyboardButton(i['name'] if len(i['name']) <= 30 else i['name'][: 30] + "...", url=i['href']))
             text = text[: -1]
             k.add(InlineKeyboardButton('Обновить', callback_data="update"))
             bot.send_message(message.from_user.id, "\n".join(text),
@@ -416,7 +418,8 @@ def callback_worker(call):
                 text.append(f"Оставшееся время: {i['time']}")
                 text.append(f"Ссылка: {i['href']}")
                 text.append("")
-                k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                k.add(
+                    InlineKeyboardButton(i['name'] if len(i['name']) <= 30 else i['name'][: 30] + "...", url=i['href']))
             text = text[: -1]
             k.add(InlineKeyboardButton('Обновить', callback_data="update"))
             bot.edit_message_text("\n".join(text), call.message.chat.id, call.message.message_id,
@@ -448,7 +451,9 @@ def update():
                         text.append(f"Оставшееся время: {i['time']}")
                         text.append(f"Ссылка: {i['href']}")
                         text.append("")
-                        k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                        k.add(
+                            InlineKeyboardButton(i['name'] if len(i['name']) <= 30 else i['name'][: 30] + "...",
+                                                 url=i['href']))
                     text = text[: -1]
                     k.add(InlineKeyboardButton('Обновить', callback_data="update"))
                     bot.send_message(user.tg_id, "\n".join(text),
@@ -462,7 +467,9 @@ def update():
                         text.append(f"Оставшееся время: {i['time']}")
                         text.append(f"Ссылка: {i['href']}")
                         text.append("")
-                        k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                        k.add(
+                            InlineKeyboardButton(i['name'] if len(i['name']) <= 30 else i['name'][: 30] + "...",
+                                                 url=i['href']))
                     text = text[: -1]
                     k.add(InlineKeyboardButton('Обновить', callback_data="update"))
                     bot.send_message(user.tg_id, "\n".join(text),
@@ -476,7 +483,9 @@ def update():
                         text.append(f"Оставшееся время: {i['time']}")
                         text.append(f"Ссылка: {i['href']}")
                         text.append("")
-                        k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                        k.add(
+                            InlineKeyboardButton(i['name'] if len(i['name']) <= 30 else i['name'][: 30] + "...",
+                                                 url=i['href']))
                     text = text[: -1]
                     k.add(InlineKeyboardButton('Обновить', callback_data="update"))
                     bot.send_message(user.tg_id, "\n".join(text),
