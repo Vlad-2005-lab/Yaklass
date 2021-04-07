@@ -48,7 +48,7 @@ def myincode(text):
 
 def mydecode(text):
     """
-    !!!this funstion for text after function "mycode"!!!
+    !!!this funstion for text after function "myincode"!!!
     funcrion return str
     """
     ta = str(text)
@@ -226,11 +226,21 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
         soup = BeautifulSoup(text, features="lxml")
         table = soup.find_all('tr', {'class': 'statusUnchecked'})
         table1 = soup.find_all('tr', {'class': 'statusRunning'})
+        table.extend(table1)
         countt = 0
         _len = 0
         jobs = []
         for work in table:
-            if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
+            try:
+                td = work.find("td", {"class": "score right"})
+                # td = work.find_all("td")
+                # print(td)
+                assert td.children
+            except Exception:
+                continue
+            if len(" ".join(list(str(i.name) for i in td.children)).replace("None", "").split()) == 0 or \
+                    "span" in " ".join(list(str(i.name) for i in td.children)).replace("None", "").split() and \
+                    td.find("span", {"class": "needCheck"}).get("title") == "Проверяется":
                 dates = work.find_all('input', {'class': 'utc-date-time'})
                 time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')), timezone.utc)
                 utcmoment_naive = datetime.datetime.utcnow()
@@ -245,7 +255,8 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
                                                                f"{x.split(', ')[1].split(':')[1]} minutes",
                                                                f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
                                                     )(str(time1 - time2))),
-                                 'time(d)': time1})
+                                 'time(d)': time1,
+                                 'sort': int((time1 - time2).total_seconds())})
                 else:
                     jobs.append({'name': work.find('a').text,
                                  'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
@@ -253,44 +264,18 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
                                                                f"{x.split(':')[1]} minutes",
                                                                f"{int(x.split(':')[2].split('.')[0])} seconds"]
                                                     )(str(time1 - time2))),
-                                 'time(d)': time1})
-            else:
-                countt += 1
-            _len += 1
-        for work in table1:
-            if work.find('td', {'class': "status left"}).get('title') != 'Закончена':
-                dates = work.find_all('input', {'class': 'utc-date-time'})
-                time1 = datetime.datetime.fromtimestamp(int(dates[1].get('value')), timezone.utc)
-                utcmoment_naive = datetime.datetime.utcnow()
-                utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
-                time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
-                time1 = time1.astimezone(pytz.timezone(timezones[0]))
-                if (time1 - time2).days >= 1:
-                    jobs.append({'name': work.find('a').text,
-                                 'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
-                                 'time': ", ".join((lambda x: [x.split(", ")[0],
-                                                               f"{x.split(', ')[1].split(':')[0]} hours",
-                                                               f"{x.split(', ')[1].split(':')[1]} minutes",
-                                                               f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
-                                                    )(str(time1 - time2))),
-                                 'time(d)': time1})
-                else:
-                    jobs.append({'name': work.find('a').text,
-                                 'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
-                                 'time': ", ".join((lambda x: [f"{x.split(':')[0]} hours",
-                                                               f"{x.split(':')[1]} minutes",
-                                                               f"{int(x.split(':')[2].split('.')[0])} seconds"]
-                                                    )(str(time1 - time2))),
-                                 'time(d)': time1})
+                                 'time(d)': time1,
+                                 'sort': int((time1 - time2).total_seconds())})
             else:
                 countt += 1
             _len += 1
         if _len == countt:
             if _len == 0 and countt == 0:
                 return Text.return_text_jaklass
+            jobs.sort(key=lambda x: x["sort"])
             return jobs
         else:
-            jobs.sort(key=lambda x: x["time"])
+            jobs.sort(key=lambda x: x["sort"])
             return jobs
     except Exception as er:
         log(message=None, where="request_to_yaklass", comments=str(er))
@@ -318,19 +303,29 @@ def start(message):
                 return bot.send_message(message.from_user.id, "\n".join(text),
                                         reply_markup=buttons_creator(Buttons.update))
             elif type(answer) is list:
-                text = [f"К сожалению у вас есть работы:", ""]
-                # text = [f"{NADO_YDALIT}", f"К сожалению у вас есть работы:", ""]
+                text = [Text.bad_news, ""]
+                # user.place = 'menu'
+                min_time = answer[0]["time(d)"]
+                utcmoment_naive = datetime.datetime.utcnow()
+                utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
+                time_now = utcmoment.astimezone(pytz.timezone(timezones[0]))
                 k = InlineKeyboardMarkup(row_width=1)
                 for i in answer:
                     text.append(f"Название: {i['name']}")
                     text.append(f"Оставшееся время: {i['time']}")
                     text.append(f"Ссылка: {i['href']}")
                     text.append("")
-                    k.add(InlineKeyboardButton(i['name'], url=i['href']))
+                    k.add(
+                        InlineKeyboardButton(i['name'] if len(i['name']) <= 30 else i['name'][: 30] + "...",
+                                             url=i['href']))
                 text = text[: -1]
                 k.add(InlineKeyboardButton('Обновить', callback_data="update"))
-                return bot.send_message(message.from_user.id, "\n".join(text),
-                                        reply_markup=k)
+                bot.send_message(user.tg_id, "\n".join(text),
+                                 reply_markup=k)
+                bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
+                user.last_time = time_now
+                session.commit()
+                update_yandex_disk()
         else:
             user.place = 'login'
             session.commit()
@@ -339,8 +334,8 @@ def start(message):
         user = User()
         user.tg_id = message.from_user.id
         user.count = 0
-        user.login = ""
-        user.password = ""
+        user.login = myincode("")
+        user.password = myincode("")
         user.place = 'login'
         utcmoment_naive = datetime.datetime.utcnow()
         utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
@@ -485,7 +480,10 @@ def update():
                 last_time = datetime.datetime.strptime(str(user.last_time), '%Y-%m-%d %H:%M:%S.%f%z')
             except Exception:
                 last_time = datetime.datetime.fromtimestamp(float(user.last_time), timezone.utc)
-            answer = request_to_yaklass(user.tg_id)
+            try:
+                answer = request_to_yaklass(user.tg_id)
+            except Exception:
+                continue
             if type(answer) is list:
                 text = [Text.bad_news, ""]
                 # user.place = 'menu'
