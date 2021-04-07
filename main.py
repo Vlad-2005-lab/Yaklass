@@ -146,6 +146,7 @@ def buttons_creator(dict_of_names, how_many_rows=8):
 
 
 def request_to_yaklass(tg_id):
+    global timezones
     try:
         session = db_session.create_session()
         user = session.query(User).filter(User.tg_id == tg_id).first()
@@ -190,14 +191,24 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
                 utcmoment_naive = datetime.datetime.utcnow()
                 utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
                 time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
-                jobs.append({'name': work.find('a').text,
-                             'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
-                             'time': ", ".join((lambda x: [x.split(", ")[0],
-                                                           f"{x.split(', ')[1].split(':')[0]} hours",
-                                                           f"{x.split(', ')[1].split(':')[1]} minutes",
-                                                           f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
-                                                )(str(time1 - time2))),
-                             'time(d)': time1})
+                time1 = time1.astimezone(pytz.timezone(timezones[0]))
+                if (time1 - time2).days >= 1:
+                    jobs.append({'name': work.find('a').text,
+                                 'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
+                                 'time': ", ".join((lambda x: [x.split(", ")[0],
+                                                               f"{x.split(', ')[1].split(':')[0]} hours",
+                                                               f"{x.split(', ')[1].split(':')[1]} minutes",
+                                                               f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
+                                                    )(str(time1 - time2))),
+                                 'time(d)': time1})
+                else:
+                    jobs.append({'name': work.find('a').text,
+                                 'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
+                                 'time': ", ".join((lambda x: [f"{x.split(':')[0]} hours",
+                                                               f"{x.split(':')[1]} minutes",
+                                                               f"{int(x.split(':')[2].split('.')[0])} seconds"]
+                                                    )(str(time1 - time2))),
+                                 'time(d)': time1})
             else:
                 countt += 1
             _len += 1
@@ -208,14 +219,24 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
                 utcmoment_naive = datetime.datetime.utcnow()
                 utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
                 time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
-                jobs.append({'name': work.find('a').text,
-                             'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
-                             'time': ", ".join((lambda x: [x.split(", ")[0],
-                                                           f"{x.split(', ')[1].split(':')[0]} hours",
-                                                           f"{x.split(', ')[1].split(':')[1]} minutes",
-                                                           f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
-                                                )(str(time1 - time2))),
-                             'time(d)': time1})
+                time1 = time1.astimezone(pytz.timezone(timezones[0]))
+                if (time1 - time2).days >= 1:
+                    jobs.append({'name': work.find('a').text,
+                                 'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
+                                 'time': ", ".join((lambda x: [x.split(", ")[0],
+                                                               f"{x.split(', ')[1].split(':')[0]} hours",
+                                                               f"{x.split(', ')[1].split(':')[1]} minutes",
+                                                               f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
+                                                    )(str(time1 - time2))),
+                                 'time(d)': time1})
+                else:
+                    jobs.append({'name': work.find('a').text,
+                                 'href': f"""https://www.yaklass.ru{work.find("a").get("href")}""",
+                                 'time': ", ".join((lambda x: [f"{x.split(':')[0]} hours",
+                                                               f"{x.split(':')[1]} minutes",
+                                                               f"{int(x.split(':')[2].split('.')[0])} seconds"]
+                                                    )(str(time1 - time2))),
+                                 'time(d)': time1})
             else:
                 countt += 1
             _len += 1
@@ -403,13 +424,13 @@ def callback_worker(call):
 
 
 def update():
-    print(datetime.datetime.now(timezone.utc))
+    print(datetime.datetime.now(timezone.utc).astimezone(pytz.timezone(timezones[0])))
     try:
         sessionn = db_session.create_session()
         users = sessionn.query(User).all()
         for user in users:
             try:
-                last_time = datetime.datetime.strptime(str(user.last_time), '%Y-%m-%d %H:%M:%S.%f')
+                last_time = datetime.datetime.strptime(str(user.last_time), '%Y-%m-%d %H:%M:%S.%f%z')
             except Exception:
                 last_time = datetime.datetime.fromtimestamp(float(user.last_time), timezone.utc)
             answer = request_to_yaklass(user.tg_id)
@@ -434,7 +455,6 @@ def update():
                                      reply_markup=k)
                     bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
                     user.last_time = time_now
-                    sessionn.commit()
                 elif (min_time - time_now).days < 1 and (min_time - time_now).seconds >= 5 * 60 * 60 and (
                         time_now - last_time).seconds >= 60 * 60:
                     for i in answer:
@@ -449,7 +469,6 @@ def update():
                                      reply_markup=k)
                     bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
                     user.last_time = time_now
-                    sessionn.commit()
                 elif (min_time - time_now).seconds < 5 * 60 * 60 and (
                         time_now - last_time).seconds >= 30 * 60:
                     for i in answer:
@@ -464,7 +483,7 @@ def update():
                                      reply_markup=k)
                     bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
                     user.last_time = time_now
-                    sessionn.commit()
+                sessionn.commit()
     except Exception as er:
         print("oshibka:", er)
 
