@@ -255,7 +255,7 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
                                                                f"{x.split(', ')[1].split(':')[1]} minutes",
                                                                f"{int(x.split(', ')[1].split(':')[2].split('.')[0])} seconds"]
                                                     )(str(time1 - time2))),
-                                 'time(d)': time1,
+                                 'time(d)': time1 - time2,
                                  'sort': int((time1 - time2).total_seconds())})
                 else:
                     jobs.append({'name': work.find('a').text,
@@ -264,7 +264,7 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
                                                                f"{x.split(':')[1]} minutes",
                                                                f"{int(x.split(':')[2].split('.')[0])} seconds"]
                                                     )(str(time1 - time2))),
-                                 'time(d)': time1,
+                                 'time(d)': time1 - time2,
                                  'sort': int((time1 - time2).total_seconds())})
             else:
                 countt += 1
