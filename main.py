@@ -523,7 +523,7 @@ def update():
                                      reply_markup=k)
                     bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
                     user.last_time = time_now
-                elif 0 < (min_time - time_now).days < 1 and 0 < (min_time - time_now).seconds < 5 * 60 * 60 and (
+                elif 0 <= (min_time - time_now).days < 1 and 0 < (min_time - time_now).seconds < 5 * 60 * 60 and (
                         time_now - last_time).seconds >= 30 * 60:
                     for i in answer:
                         text.append(f"Название: {i['name']}")
