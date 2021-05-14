@@ -335,9 +335,9 @@ def start(message):
         print(3)
         new_user.count = 0
         print(4)
-        new_user.login = myincode("")
+        new_user.login = myincode("aboba")
         print(5)
-        new_user.password = myincode("")
+        new_user.password = myincode("aboba")
         print(6)
         new_user.place = 'login'
         print(7)
