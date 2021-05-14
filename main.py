@@ -328,17 +328,27 @@ def start(message):
                 update_yandex_disk()
                 return
     except Exception:
+        print(1)
         new_user = User()
+        print(2)
         new_user.tg_id = message.from_user.id
+        print(3)
         new_user.count = 0
+        print(4)
         new_user.login = myincode("")
+        print(5)
         new_user.password = myincode("")
+        print(6)
         new_user.place = 'login'
+        print(7)
         utcmoment_naive = datetime.datetime.utcnow()
         utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
         time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
+        print(8)
         new_user.last_time = time2.timestamp()
+        print(9)
         session.add(new_user)
+        print(10)
         session.commit()
     bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
 
