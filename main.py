@@ -293,6 +293,7 @@ def help_bot(message):
 def start(message):
     session = db_session.create_session()
     try:
+        print('+') 
         user = session.query(User).filter(User.tg_id == message.from_user.id).first()
         print(user.login)
         if user.login:
@@ -328,6 +329,7 @@ def start(message):
                 session.commit()
                 update_yandex_disk()
     except Exception:
+        print('v oshibke')
         user = User()
         user.tg_id = message.from_user.id
         user.count = 0
