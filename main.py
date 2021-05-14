@@ -326,10 +326,6 @@ def start(message):
                 user.last_time = time_now
                 session.commit()
                 update_yandex_disk()
-        else:
-            user.place = 'login'
-            session.commit()
-            return bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
     except Exception:
         user = User()
         user.tg_id = message.from_user.id
