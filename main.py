@@ -338,9 +338,10 @@ def start(message):
         utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
         time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
         user.last_time = time2.timestamp()
+        print(1)
         session.add(user)
+        print(2)
         session.commit()
-        print('suka')
     bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
 
 
