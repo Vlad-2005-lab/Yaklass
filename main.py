@@ -292,8 +292,8 @@ def help_bot(message):
 @bot.message_handler(commands=["start"])
 def start(message):
     session = db_session.create_session()
-    user = session.query(User).filter(User.tg_id == message.from_user.id).first()
     try:
+        user = session.query(User).filter(User.tg_id == message.from_user.id).first()
         if user.login:
             answer = request_to_yaklass(message.from_user.id)
             if answer == Text.return_text_jaklass:
