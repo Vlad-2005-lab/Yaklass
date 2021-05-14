@@ -219,6 +219,9 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
         r = session.get(url, headers={
             'User-Agent': user_agent_val
         })
+        if "Забыли пароль?" in r.text:
+            log(message=None, where="request_to_yaklass", comments="Govno parol")
+            return Text.error_jaklass
         # with open("ysklass.html", "w", encoding="utf-8") as f:
         #     for string in r.text.split("\n"):
         #         f.writelines(string)
