@@ -286,7 +286,7 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
 def help_bot(message):
     # session = db_session.create_session()
     # user = session.query(User).filter(User.tg_id == message.from_user.id).first()
-    bot.send_message(message.from_user.id, f"hz")
+    bot.send_message(message.from_user.id, f"{message.from_user.id}")
 
 
 @bot.message_handler(commands=["start"])
