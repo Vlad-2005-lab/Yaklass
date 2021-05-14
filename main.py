@@ -286,14 +286,14 @@ Chrome/87.0.4280.141 Safari/537.36 OPR/73.0.3856.415 (Edition Yx GX 03)""".repla
 def help_bot(message):
     # session = db_session.create_session()
     # user = session.query(User).filter(User.tg_id == message.from_user.id).first()
-    bot.send_message(message.from_user.id, f"{message.from_user.id}")
+    bot.send_message(message.from_user.id, f"hz")
 
 
 @bot.message_handler(commands=["start"])
 def start(message):
     session = db_session.create_session()
+    user = session.query(User).filter(User.tg_id == message.from_user.id).first()
     try:
-        user = session.query(User).filter(User.tg_id == message.from_user.id).first()
         if user.login:
             answer = request_to_yaklass(message.from_user.id)
             if answer == Text.return_text_jaklass:
@@ -326,29 +326,22 @@ def start(message):
                 user.last_time = time_now
                 session.commit()
                 update_yandex_disk()
-                return
+        else:
+            user.place = 'login'
+            session.commit()
+            return bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
     except Exception:
-        print(1)
-        new_user = User()
-        print(2)
-        new_user.tg_id = message.from_user.id
-        print(3)
-        new_user.count = 0
-        print(4)
-        new_user.login = myincode("aboba")
-        print(5)
-        new_user.password = myincode("aboba")
-        print(6)
-        new_user.place = 'login'
-        print(7)
+        user = User()
+        user.tg_id = message.from_user.id
+        user.count = 0
+        user.login = myincode("aboba")
+        user.password = myincode("aboba")
+        user.place = 'login'
         utcmoment_naive = datetime.datetime.utcnow()
         utcmoment = utcmoment_naive.replace(tzinfo=pytz.utc)
         time2 = utcmoment.astimezone(pytz.timezone(timezones[0]))
-        print(8)
-        new_user.last_time = time2.timestamp()
-        print(9)
-        session.add(new_user)
-        print(10)
+        user.last_time = time2.timestamp()
+        session.add(user)
         session.commit()
     bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
 
@@ -530,7 +523,7 @@ def update():
                                      reply_markup=k)
                     bot.send_message(user.tg_id, Text.main_menu, reply_markup=keyboard_creator(Keyboard.main_menu))
                     user.last_time = time_now
-                elif 0 <= (min_time - time_now).days < 1 and 0 < (min_time - time_now).seconds < 5 * 60 * 60 and (
+                elif 0 < (min_time - time_now).seconds < 5 * 60 * 60 and (
                         time_now - last_time).seconds >= 30 * 60:
                     for i in answer:
                         text.append(f"Название: {i['name']}")
@@ -553,7 +546,7 @@ def update():
 
 
 def start_chek():
-    schedule.every(30).seconds.do(update)
+    schedule.every().minute.do(update)
     while True:
         schedule.run_pending()
         time.sleep(1)
