@@ -293,9 +293,7 @@ def help_bot(message):
 def start(message):
     session = db_session.create_session()
     try:
-        print('+') 
         user = session.query(User).filter(User.tg_id == message.from_user.id).first()
-        print(user.login)
         if user.login:
             answer = request_to_yaklass(message.from_user.id)
             if answer == Text.return_text_jaklass:
@@ -328,8 +326,8 @@ def start(message):
                 user.last_time = time_now
                 session.commit()
                 update_yandex_disk()
+                return
     except Exception:
-        print('v oshibke')
         user = User()
         user.tg_id = message.from_user.id
         user.count = 0
@@ -342,6 +340,7 @@ def start(message):
         user.last_time = time2.timestamp()
         session.add(user)
         session.commit()
+        print('suka')
     bot.send_message(message.from_user.id, Text.start, reply_markup=ReplyKeyboardRemove())
 
 
