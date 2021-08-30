@@ -18,6 +18,7 @@ from static import *
 import pytz
 import random
 
+
 history = True
 bot = telebot.TeleBot(open("static/token.txt", mode="r", encoding="utf-8").read())
 yandex_disk = yadisk.YaDisk(token=str(open("static/yandex_disk_token.txt", mode="r", encoding="utf-8").read()))
