@@ -498,8 +498,9 @@ def update():
                 k = InlineKeyboardMarkup(row_width=1)
                 if (min_time - time_now).days >= 1 and (time_now - last_time).days >= 1:
                     for i in answer:
-                        text.append(f"Название: {i['name']}")
-                        text.append(f"Оставшееся время: {i['time']}")
+                        text.append(f"Название:\n{i['name']}")
+                        text.append(f"")
+                        text.append(f"Оставшееся время:\n{i['time']}")
                         text.append(f"Ссылка: {i['href']}")
                         text.append("")
                         k.add(
@@ -514,8 +515,9 @@ def update():
                 elif (min_time - time_now).days < 1 and (min_time - time_now).seconds >= 5 * 60 * 60 and (
                         time_now - last_time).seconds >= 60 * 60:
                     for i in answer:
-                        text.append(f"Название: {i['name']}")
-                        text.append(f"Оставшееся время: {i['time']}")
+                        text.append(f"Название:\n{i['name']}")
+                        text.append(f"")
+                        text.append(f"Оставшееся время:\n{i['time']}")
                         text.append(f"Ссылка: {i['href']}")
                         text.append("")
                         k.add(
@@ -530,8 +532,9 @@ def update():
                 elif 0 < (min_time - time_now).seconds < 5 * 60 * 60 and (
                         time_now - last_time).seconds >= 30 * 60:
                     for i in answer:
-                        text.append(f"Название: {i['name']}")
-                        text.append(f"Оставшееся время: {i['time']}")
+                        text.append(f"Название:\n{i['name']}")
+                        text.append(f"")
+                        text.append(f"Оставшееся время:\n{i['time']}")
                         text.append(f"Ссылка: {i['href']}")
                         text.append("")
                         k.add(
